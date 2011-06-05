@@ -138,7 +138,8 @@ class everbox_client():
     
     def mkdir(self, p):
         self.xhr()
-        data = dict(new_path=p, edit_time=getutctime())
+        #data = dict(new_path=p, edit_time=getutctime())
+        data = dict(new_path=p)
         data[self.csrf_param] = self.csrf_token
         resp, json = self.h.request('http://www.everbox.com/api/fs/mkdir', 'POST',
                                     body=urlencode(data),headers=self.headers)

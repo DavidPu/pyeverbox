@@ -1,9 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-username='your everbox id'
-password='your password'
+username='13795313475'
+password='davidpu'
 
 import everbox
+import os
+import sys
+import getpass
+
+#username = raw_input("user id:")
+#password = getpass.getpass()
 
 eb = everbox.everbox_client()
 eb.login(user=username, pwd=password)
@@ -82,16 +88,61 @@ def do_upload(src, dest='/home', level=0):
             
         for i in os.listdir(src):
             do_upload(src + '/' + i, dest + '/' + i, level + 1)
-    elif os.path.isfile(src):        
-        print 'write %s to %s' % (src, os.path.dirname(dest))
-        eb.write2(src, os.path.dirname(dest))
+    elif os.path.isfile(src):
+        if level == 0:
+            dst = dest
+        else:
+            dst = os.path.dirname(dest)
+        print 'write %s to %s' % (src, dst)
+        print eb.write(src, '/home')
 
 def upload(src, dest):
-    eb = everbox.everbox_client()
-    eb.login(user=username, pwd=password)
     do_upload(src, dest)
 
-do_upload(os.path.expanduser('/usr/src/linux-2.6'), '/home/linux-2.6')    
+import json
+
+def do_download(path, level=0):
+    ret = json.loads(eb.ls(path))
+    if 'data' in ret:
+        data = ret['data']
+    else:
+        return None
+    
+    t = data['type']
+    
+    if t == 2:
+        for item in data['entries']:
+            if item['type'] == 2 and item['fileCount'] > 1:
+                item['entries'] = do_download(item['path'], level + 1)
+    return data
+            
+
+def dump(data):
+    if data['type'] == 2:
+        entries = data['entries']
+        if type(entries).__name__ == 'dict':
+            t = list()
+            t.append(entries)
+            entries = t
+            
+        for item in entries:
+            if item['type'] == 2 and item['fileCount'] > 1:
+                dump(item)
+            else:
+                print item['path']
+    
+    
+def download(path):
+    data = do_download(path, 0)
+    print "loaded==", type(data)
+    print data
+    dump(data)
+
+
+#download('/home')
+#do_upload('.', '/home/pyeverbox')
+eb.write2('/home/pulq/test', '/home')
+#do_upload(os.path.expanduser('/usr/src/linux-2.6'), '/home/linux-2.6')    
 #do_upload(os.path.expanduser('~/Documents'), '/home/Documents')
 #do_upload(os.path.expanduser('~/testsuite/everbox'), '/home/everbox')
 #eb.read(os.sys.argv[1], os.sys.argv[2])
