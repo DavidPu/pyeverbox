@@ -97,8 +97,8 @@ class everbox_client():
         self.process(resp, html)
         #login
         data = dict(sdo_account='1',
-            login='13795313475',
-            pwd='davidpu',
+            login=user,
+            pwd=pwd,
             rememberme='1',
             submit_new='立即登录')
         data[self.csrf_param] = self.csrf_token
