@@ -17,7 +17,6 @@ logging.basicConfig(level=logging.DEBUG,
 
 def debug(msg, *args, **kargs):
     logging.debug(msg, *args, **kargs)
-    
 
 def get_csrf(html):
     """
@@ -26,7 +25,7 @@ def get_csrf(html):
     """
     start = html.find("csrf-param") + len("csrf-param") + 1
     csrf_param = html[start : html.find("/>", start)].split('"')[1]
-   
+
     start = html.find("csrf-token") + len("csrf-token") + 1
     csrf_token = html[start : html.find("/>", start)].split('"')[1]
     return csrf_param, csrf_token
@@ -69,7 +68,7 @@ class everbox_client():
         self.headers['Keep-Alive'] = '115'
         self.headers['Connection'] = 'keep-alive'
         #self.header['Referer'] = 'http://www.everbox.com/'
-    
+
     def getcookie(self, name):
         val = ''
         try:
@@ -79,7 +78,7 @@ class everbox_client():
         finally:
             return val
 
-    def process(self, resp, content):       
+    def process(self, resp, content):
         if 'Cookie' in resp:
             self.headers['Cookie'].join( resp['set-cookie'])
         else:
@@ -90,7 +89,6 @@ class everbox_client():
             if resp['content-type'].find('text/html') != -1 and resp['status'] == '200':
                 self.csrf_param, self.csrf_token = get_csrf(content)
 
-    
     def login(self, user=None, pwd=None):
         resp, html = self.h.request("http://www.everbox.com", "GET",
                                          headers=self.headers)
@@ -108,7 +106,7 @@ class everbox_client():
         #http status:302
         resp, html = self.h.request("http://www.everbox.com/file", "GET", headers=self.headers)
         self.process(resp, html)
-        
+
     def logout(self):
         resp, html = self.h.request('http://www.everbox.com/logout', 'GET', headers=self.headers)
         if resp.status != 200:
@@ -120,22 +118,21 @@ class everbox_client():
             del self.headers['Content-Type']
         if 'X-Requested-With' in self.headers:
             del self.headers['X-Requested-With']
-        
-        
+
     def xhr(self):
         self.headers['Accept'] = 'application/json, text/javascript, */*; q=0.01'
         self.headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
         self.headers['X-Requested-With'] = 'XMLHttpRequest'
         self.headers['Referer'] = 'http://www.everbox.com/file'
-    
+
     def ls(self, p):
         self.xhr()
         data = dict(path=p)
         data[self.csrf_param] = self.csrf_token
         resp, json = self.h.request('http://www.everbox.com/api/fs/get','POST',
                                        body=urlencode(data), headers=self.headers)
-        return json              
-    
+        return json
+
     def mkdir(self, p):
         self.xhr()
         data = dict(new_path=p, edit_time=getutctime())
@@ -143,7 +140,7 @@ class everbox_client():
         resp, json = self.h.request('http://www.everbox.com/api/fs/mkdir', 'POST',
                                     body=urlencode(data),headers=self.headers)
         return json
-    
+
     def rename(self, p, new_p):
         self.xhr()
         data = dict(path=p, new_path=new_p)
@@ -151,7 +148,7 @@ class everbox_client():
         resp, json = self.h.request('http://www.everbox.com/api/fs/rename', 'POST',
                                     body=urlencode(data), headers=self.headers)
         return json
-    
+
     def mv(self, old_p, dest_p):
         self.xhr()
         data = dict()
@@ -159,26 +156,26 @@ class everbox_client():
         data['target_dir'] = dest_p
         body = urlencode(data) + '&' + urlencode_array('old_paths[]', old_p)
         resp, json = self.h.request('http://www.everbox.com/api/fs/move', 'POST',
-                                         body, headers=self.headers)    
+                                         body, headers=self.headers)
         return json
-    
+
     def rm(self, p):
         self.xhr()
         data=dict()
         data[self.csrf_param] = self.csrf_token
         body = urlencode(data) + '&' + urlencode_array('paths[]', p)
         resp, json = self.h.request('http://www.everbox.com/api/fs/delete', 'POST',
-                                         body, headers=self.headers)    
+                                         body, headers=self.headers)
         return json
-        
-        
+
+
     def read(self, p, out_dir):
         #self.txtreq()
         self.headers['Referer'] = 'http://www.everbox.com/file'
         data = dict(path=p)
         url = 'http://www.everbox.com/api/fs/download?'+ urlencode(data)
 
-        
+
         import subprocess
         wget_cmd = 'wget -q -O ' + out_dir + ' '
         for k, v in self.headers.items():
@@ -195,7 +192,7 @@ class everbox_client():
             return resp, html
         else:
             raise
-    
+
     def swfupload_hdr(self):
         hdr = dict()
         hdr['Accept'] = 'text/*'
@@ -206,14 +203,14 @@ class everbox_client():
         hdr['Cache-Control'] = 'no-cache'
         hdr['Cookie'] = self.headers['Cookie']
         return hdr
-    
+
     def swfupload_data(self, path, target_dir):
         f = open(path, 'rb')
         try:
             data = f.read()
         finally:
             f.close()
-        
+
         filename = os.path.basename(path)
         boundary = '------------gL6GI3GI3Ij5Ef1GI3ei4ae0ei4gL6'
         body = StringIO()
@@ -241,10 +238,10 @@ class everbox_client():
 
         resp, html = self.h.request('http://www.everbox.com/async_upload?'+url, 'POST',
                                     headers=hdr, body=data)
-        
+
         return resp, html
 
-    
+
     def swfupload_multiformdata(self, path, target_dir):
         filename = os.path.basename(path)
         boundary = '------------gL6GI3GI3Ij5Ef1GI3ei4ae0ei4gL6'
@@ -256,7 +253,7 @@ class everbox_client():
         body.write('%s\r\n%s\r\n' % (target_dir, boundary))
         body.write('Content-Disposition: form-data; name="Filedata"; filename="%s"\r\n' % filename)
         body.write('Content-Type: application/octet-stream\r\n\r\n')
-        
+
         body2 = StringIO()
         body2.write('\r\n%s\r\n' % boundary)
         body2.write('Content-Disposition: form-data; name="Upload"\r\n\r\n')
@@ -266,18 +263,18 @@ class everbox_client():
     def write2(self, path, target_dir):
         if not os.path.isfile(path):
             raise
-        
+
         hdr = self.swfupload_hdr()
         form1, form2 = self.swfupload_multiformdata(path, target_dir)
         hdr['Content-Length'] = str(len(form1) + len(form2) + os.path.getsize(path))
-        
+
         url = urlencode({'_session_id' : self.getcookie('_session_id'),
                          self.csrf_param : self.csrf_token})
         f = UploadFile(form1, form2, path)
         resp, html = self.h.request('http://www.everbox.com/async_upload?'+url, 'POST',
                                     headers=hdr, body=f)
         return resp, html
-    
+
 class UploadFile():
     def __init__(self, f1, f2, path):
         self.multiform1 = f1
@@ -287,34 +284,34 @@ class UploadFile():
         self.f2_len = len(self.multiform2)
         self.f1_cur = 0
         self.f2_cur = 0
-        
+
         self.size = os.path.getsize(path)
         self.fd = open(path, 'rb')
-        
+
     def read(self, size):
         len = 0
         data = ''
         if self.f1_cur < self.f1_len:
             l, data = self.read_f1(size)
             len = len + l
-        
+
         if (len < size) and (self.fd.tell() < self.size):
             #l, d = self.fd.read(size - len)
             pos = self.fd.tell()
             data = data + self.fd.read(size - len)
             l = self.fd.tell() - pos
             len = len + l
-            
+
         if (len < size) and (self.f2_cur < self.f2_len):
             l, d = self.read_f2(size - len)
             len = len + l
             data = data + d
-        
+
         if len == 0:
             return None
         else:
             return data
-    
+
     def read_f1(self, size):
         read = 0
         pos = self.f1_cur
@@ -324,7 +321,7 @@ class UploadFile():
             read = self.f1_len - self.f1_cur
         self.f1_cur = pos + read
         return read, self.multiform1[pos:pos+read]
-        
+
     def read_f2(self, size):
       read = 0
       pos = self.f2_cur
@@ -334,7 +331,7 @@ class UploadFile():
           read = self.f2_len - self.f2_cur
       self.f2_cur = pos + read
       return read, self.multiform2[pos:pos+read]
-          
+
     def __del__(self):
         self.fd.close()
 
