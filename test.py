@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 username='13795313475'
-password='davidpu'
+password='xUmwcH7kMp'
 
 import everbox
 import os
@@ -67,11 +67,6 @@ else:
 
 import os
 import time
-
-def dir_walker(arg, dirname, names):
-    print arg
-    print dirname
-    print names
     
 def do_upload(src, dest='/home', level=0):    
     if os.path.isdir(src):
@@ -94,7 +89,7 @@ def do_upload(src, dest='/home', level=0):
         else:
             dst = os.path.dirname(dest)
         print 'write %s to %s' % (src, dst)
-        print eb.write(src, '/home')
+        print eb.write(src, dst)
 
 def upload(src, dest):
     do_upload(src, dest)
@@ -113,7 +108,7 @@ def do_download(path, level=0):
     if t == 2:
         for item in data['entries']:
             if item['type'] == 2 and item['fileCount'] > 1:
-                item['entries'] = do_download(item['path'], level + 1)
+                item['entries'] = do_download(item['path'], level + 1)['entries']
     return data
             
 
@@ -141,10 +136,12 @@ def download(path):
 
 #download('/home')
 #do_upload('.', '/home/pyeverbox')
+#eb.write2('/home/pulq/test', '/home', 'haha')
 eb.write2('/home/pulq/test', '/home')
+#print eb.read('/home/test2', './dl')
 #do_upload(os.path.expanduser('/usr/src/linux-2.6'), '/home/linux-2.6')    
 #do_upload(os.path.expanduser('~/Documents'), '/home/Documents')
-#do_upload(os.path.expanduser('~/testsuite/everbox'), '/home/everbox')
+do_upload(os.path.expanduser('~/testsuite/everbox'), '/home/everbox')
 #eb.read(os.sys.argv[1], os.sys.argv[2])
 #print resp
 eb.logout()

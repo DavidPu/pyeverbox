@@ -6,6 +6,7 @@ from urllib import urlencode
 import math, time
 import logging
 import os
+import subprocess
 try:
     from cStringIO import StringIO
 except:
@@ -175,23 +176,16 @@ class everbox_client():
         data = dict(path=p)
         url = 'http://www.everbox.com/api/fs/download?'+ urlencode(data)
 
-
-        import subprocess
-        wget_cmd = 'wget -q -O ' + out_dir + ' '
+        wget_cmd = 'wget --tries=5 -c -O ' + out_dir + ' '
         for k, v in self.headers.items():
             wget_cmd += '--header \'' + k + ': ' + v + '\' '
         wget_cmd += '\'' + url + '\''
-        subprocess.Popen(wget_cmd, shell=True)
-        resp, html = self.h.request('http://www.everbox.com/api/fs/download?'+
-                                    urlencode(data), 'GET', headers=self.headers)
-        #status:302
-        if resp['status'] == '302':
-            process(html)
-            return self.h.request(resp['location'], 'GET', headers=self.headers)
-        elif resp['status'] == '200':
-            return resp, html
-        else:
-            raise
+        p = subprocess.Popen(wget_cmd, shell=True)#, stdin=subprocess.PIPE,
+                            # stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        stdout, stderr = p.communicate()
+        return {'code':p.returncode, 'data': stderr}
+
 
     def swfupload_hdr(self):
         hdr = dict()
@@ -204,14 +198,18 @@ class everbox_client():
         hdr['Cookie'] = self.headers['Cookie']
         return hdr
 
-    def swfupload_data(self, path, target_dir):
+    def swfupload_data(self, path, target_dir, target_name=None):
         f = open(path, 'rb')
         try:
             data = f.read()
         finally:
             f.close()
+            
+        if target_name != None:
+            filename = target_name
+        else:
+            filename = os.path.basename(path)
 
-        filename = os.path.basename(path)
         boundary = '------------gL6GI3GI3Ij5Ef1GI3ei4ae0ei4gL6'
         body = StringIO()
         body.write('%s\r\n' % boundary)
@@ -227,9 +225,9 @@ class everbox_client():
         body.write('Submit Query\r\n%s--' % boundary)
         return body.getvalue()
 
-    def write(self, path, target_dir):
+    def write(self, path, target_dir, target_name=None):
         hdr = self.swfupload_hdr()
-        data = self.swfupload_data(path, target_dir)
+        data = self.swfupload_data(path, target_dir, target_name)
         hdr['Content-Length'] = str(len(data))
         url = urlencode({'_session_id' : self.getcookie('_session_id'),
                          self.csrf_param : self.csrf_token})
@@ -242,8 +240,12 @@ class everbox_client():
         return resp, html
 
 
-    def swfupload_multiformdata(self, path, target_dir):
-        filename = os.path.basename(path)
+    def swfupload_multiformdata(self, path, target_dir, target_name=None):
+        if target_name != None:
+            filename = target_name
+        else:
+            filename = os.path.basename(path)
+
         boundary = '------------gL6GI3GI3Ij5Ef1GI3ei4ae0ei4gL6'
         body = StringIO()
         body.write('%s\r\n' % boundary)
@@ -260,12 +262,12 @@ class everbox_client():
         body2.write('Submit Query\r\n%s--' % boundary)
         return body.getvalue(), body2.getvalue()
 
-    def write2(self, path, target_dir):
+    def write2(self, path, target_dir, target_name=None):
         if not os.path.isfile(path):
             raise
 
         hdr = self.swfupload_hdr()
-        form1, form2 = self.swfupload_multiformdata(path, target_dir)
+        form1, form2 = self.swfupload_multiformdata(path, target_dir, target_name)
         hdr['Content-Length'] = str(len(form1) + len(form2) + os.path.getsize(path))
 
         url = urlencode({'_session_id' : self.getcookie('_session_id'),
