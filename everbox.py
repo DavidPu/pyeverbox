@@ -138,8 +138,7 @@ class everbox_client():
     
     def mkdir(self, p):
         self.xhr()
-        #data = dict(new_path=p, edit_time=getutctime())
-        data = dict(new_path=p)
+        data = dict(new_path=p, edit_time=getutctime())
         data[self.csrf_param] = self.csrf_token
         resp, json = self.h.request('http://www.everbox.com/api/fs/mkdir', 'POST',
                                     body=urlencode(data),headers=self.headers)
@@ -237,7 +236,10 @@ class everbox_client():
         hdr['Content-Length'] = str(len(data))
         url = urlencode({'_session_id' : self.getcookie('_session_id'),
                          self.csrf_param : self.csrf_token})
-        resp, html = self.h.request('http://www.everbox.com/api/fs/upload?'+url, 'POST',
+        #resp, html = self.h.request('http://www.everbox.com/api/fs/upload?'+url, 'POST',
+        #                            headers=hdr, body=data)
+
+        resp, html = self.h.request('http://www.everbox.com/async_upload?'+url, 'POST',
                                     headers=hdr, body=data)
         
         return resp, html
@@ -272,7 +274,7 @@ class everbox_client():
         url = urlencode({'_session_id' : self.getcookie('_session_id'),
                          self.csrf_param : self.csrf_token})
         f = UploadFile(form1, form2, path)
-        resp, html = self.h.request('http://www.everbox.com/api/fs/upload?'+url, 'POST',
+        resp, html = self.h.request('http://www.everbox.com/async_upload?'+url, 'POST',
                                     headers=hdr, body=f)
         return resp, html
     
