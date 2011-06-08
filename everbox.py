@@ -2,11 +2,12 @@
 #-*- coding: utf-8 -*-
 
 import httplib2
-from urllib import urlencode
+import urllib
 import math, time
 import logging
 import os
 import subprocess
+import tempfile
 try:
     from cStringIO import StringIO
 except:
@@ -15,6 +16,13 @@ except:
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(filename)s:%(lineno)d %(message)s')
+
+
+def urlencode(d):
+    for k, v in d.items():
+        if isinstance(v, unicode):
+            d[k] = v.encode('utf-8')
+    return urllib.urlencode(d)
 
 def debug(msg, *args, **kargs):
     logging.debug(msg, *args, **kargs)
@@ -60,7 +68,7 @@ class everbox_client():
     def __init__(self):
         self.csrf_param = None
         self.csrf_token = None
-        self.h = httplib2.Http(".cache")
+        self.h = httplib2.Http(tempfile.gettempdir() + '/pyeverbox')
         self.headers = dict()
         self.headers['User-Agent'] = 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110420 Firefox/3.6.17'
         self.headers['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
@@ -107,6 +115,7 @@ class everbox_client():
         #http status:302
         resp, html = self.h.request("http://www.everbox.com/file", "GET", headers=self.headers)
         self.process(resp, html)
+        return self.headers['Cookie'].find('_remember_token') >= 0
 
     def logout(self):
         resp, html = self.h.request('http://www.everbox.com/logout', 'GET', headers=self.headers)

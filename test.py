@@ -1,13 +1,33 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-username='13795313475'
-password='xUmwcH7kMp'
 
 import everbox
 import os
 import sys
 import getpass
+import ConfigParser
 
+def load_config():
+    cfg_file = os.path.expanduser('~/.pyeverbox/config')
+    config = ConfigParser.ConfigParser()
+    try:
+        fd = open(cfg_file, "r")
+        config.readfp(fd)
+        id = config.get('account', 'id')
+        pwd = config.get('account', 'password')
+    except:
+        os.makedirs(os.path.dirname(cfg_file))
+        fd = open(cfg_file, "w+")
+        id = raw_input("everbox id:")
+        pwd = getpass.getpass()
+        config.add_section('account')
+        config.set('account', 'id', id)
+        config.set('account', 'password', pwd)
+        config.write(fd)
+        fd.close()
+    return id, pwd
+
+username, password = load_config()
 #username = raw_input("user id:")
 #password = getpass.getpass()
 
