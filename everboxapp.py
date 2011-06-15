@@ -27,6 +27,26 @@ def eb_isfile(t):
         return True
     else:
         return False
+    
+def eb_isdeleted(t):
+    if (t & 0x8000) != 0:
+        return True
+    else:
+        return False
+
+def eb_exists(fs, p):
+    if not 'entries' in fs:
+        return None
+#    if os.path.isdir(p):
+#        if os.path.basename(fs['path']) == os.path.basename(p):
+#            return fs
+    
+    e = fs['entries']
+    for i in e:
+        if os.path.basename(i['path']) == os.path.basename(p):
+            return i
+
+    return None
 
 def cmp_sortdir(x, y):
     if os.path.isdir(x):
@@ -79,12 +99,17 @@ def do_list(eb, opt, path, level=0):
     else:
         return None
     
+    if not 'type' in data:
+        return None
+    
     t = data['type']
     
     if (eb_isdir(t)):
         for item in data['entries']:
             if eb_isdir(item['type']) and item['fileCount'] > 1:
-                item['entries'] = do_list(eb, opt, item['path'], level + 1)['entries']
+                ret = do_list(eb, opt, item['path'], level + 1)['entries']
+                if ret != None:
+                    item['entries'] = ret
     else:
         if eb_isfile(t):
             print "file: %s" % path
@@ -109,22 +134,80 @@ def dump(data):
                 print item['path']
     
     
-def list(eb, opt, args):
+def list_dir(eb, opt, args):
     data = do_list(eb, opt, args[0])
     print "loaded==", type(data)
     print data
     #dump(data)
 
+def compare(eb, src, dst):
+    print src
+    if not os.path.exists(src):
+        print "%s is not exists" % src
+        return
+    try:
+        dstfs = json.loads(eb.ls(dst))
+    except:
+        print "not find"
+        return
+    
+    print 'code', dstfs['code']
+    if dstfs['code'] == 400: #Path Not Found
+        if os.path.isfile(src):
+            print "writing %s to %s..." % (src, os.path.dirname(dst))
+            resp, c = eb.write2(src, os.path.dirname(dst), os.path.basename(dst))
+            print "status:%s" % resp['status']
+        elif os.path.isdir(src):
+            return do_upload(eb, src, dst)
+
+    elif dstfs['code'] == 200:
+        ret = eb_exists(dstfs['data'], src)
+        print ret
+        if ret == None:
+            return do_upload(eb, src, dst)
+        elif eb_isdeleted(ret['type']):
+            print "%s is deleted on server" % ret['path']
+        elif eb_isfile(ret['type']):
+            print "file exists! compare file timestamp here!"
+        elif eb_isdir(ret['type']):
+            print "dir ..."
+            if os.path.isfile(src):
+                return do_upload(eb, src, dst)
+            print "host dir..."
+            for d in os.listdir(src):
+                print "host d",d
+                ret = eb_exists(dstfs['data'], d)
+                print "exists: ret",ret
+                if ret == None:
+                    return do_upload(eb, src + '/' + d, dst)
+                elif eb_isfile(ret['type']):
+                    if os.path.isfile(src + '/' + d):
+                        print "file exists! compare file timestamp here 2!"
+                    else:
+                        print "cannot overwrite file '%s' with directory" % ret['path']
+                elif eb_isdir(ret['type']):
+                    if os.path.isdir(src + '/' + d):
+                        compare(eb, src + '/' + d, ret['path'])
+                    else:
+                        print "cannot overrite directory '%s' with non-directory" % ret['path']
+        else:
+            print "oops! src:%s dst:%s" % src, dst
+        
+        
+            
+        
+    
+    
 def upload(eb, opt, args):
     dst = args[-1:][0]
     for i in args[0:len(args)-1]:
-        do_upload(eb, i, dst)
-    
+        compare(eb, i, dst)
+
 
 commands={
     'upload':upload,
-    'list':list,
-    'ls':list
+    'list':list_dir,
+    'ls':list_dir
 }
 
 
@@ -168,11 +251,13 @@ def main():
     eb = everbox.everbox_client()    
     trycount = 0
     user, password = load_config()
-    while trycount < 5:
+    while True:
         if not eb.login(user=user, pwd=password):
             trycount += 1
             time.sleep(1)
             user, password = load_config(reset=True)
+            if trycount > 5:
+                print "login failed!"
         else:
             break
 

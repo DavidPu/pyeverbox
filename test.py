@@ -155,13 +155,13 @@ def download(path):
 
 
 #download('/home')
-#do_upload('.', '/home/pyeverbox')
+#do_upload('.', '/home/yuyuan.tar.bz2')
 #eb.write2('/home/pulq/test', '/home', 'haha')
-eb.write2('/home/pulq/test', '/home')
-#print eb.read('/home/test2', './dl')
+#eb.write2('/home/pulq/test', '/home')
+print eb.read('/home/yuyuan.tar.bz2', './dl')
 #do_upload(os.path.expanduser('/usr/src/linux-2.6'), '/home/linux-2.6')    
 #do_upload(os.path.expanduser('~/Documents'), '/home/Documents')
-do_upload(os.path.expanduser('~/testsuite/everbox'), '/home/everbox')
+#do_upload(os.path.expanduser('~/testsuite/everbox'), '/home/everbox')
 #eb.read(os.sys.argv[1], os.sys.argv[2])
 #print resp
 eb.logout()

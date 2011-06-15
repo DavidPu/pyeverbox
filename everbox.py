@@ -49,9 +49,6 @@ def utc_to_local(t):
     secs = calendar.timegm(t)
     return time.localtime(secs)
 
-def getutctime():
-  return int(math.floor(time.time()))
-
 def urlencode_array(arr_name, param):
     if type(param).__name__ == 'str':
         return urlencode({arr_name: param})
@@ -145,7 +142,7 @@ class everbox_client():
 
     def mkdir(self, p):
         self.xhr()
-        data = dict(new_path=p, edit_time=getutctime())
+        data = dict(new_path=p)
         data[self.csrf_param] = self.csrf_token
         resp, json = self.h.request('http://www.everbox.com/api/fs/mkdir', 'POST',
                                     body=urlencode(data),headers=self.headers)
